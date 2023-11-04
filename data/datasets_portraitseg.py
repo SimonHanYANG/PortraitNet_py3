@@ -18,12 +18,12 @@ from PIL import Image
 # from PIL import ImageFile
 # ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-from data_aug import data_aug_blur, data_aug_color, data_aug_noise, data_aug_light
-from data_aug import data_aug_flip, flip_data, aug_matrix
-from data_aug import show_edge, mask_to_bbox, load_json
-from data_aug import base64_2_mask, mask_2_base64, padding, Normalize_Img, Anti_Normalize_Img
-from data_aug import data_motion_blur, data_Affine, data_Perspective, data_ThinPlateSpline
-from data_aug import data_motion_blur_prior, data_Affine_prior, data_Perspective_prior, data_ThinPlateSpline_prior
+from .data_aug import data_aug_blur, data_aug_color, data_aug_noise, data_aug_light
+from .data_aug import data_aug_flip, flip_data, aug_matrix
+from .data_aug import show_edge, mask_to_bbox, load_json
+from .data_aug import base64_2_mask, mask_2_base64, padding, Normalize_Img, Anti_Normalize_Img
+from .data_aug import data_motion_blur, data_Affine, data_Perspective, data_ThinPlateSpline
+from .data_aug import data_motion_blur_prior, data_Affine_prior, data_Perspective_prior, data_ThinPlateSpline_prior
 
 class PortraitSeg(data.Dataset): 
     def __init__(self, ImageRoot, AnnoRoot, ImgIds_Train, ImgIds_Test, exp_args):

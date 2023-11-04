@@ -36,7 +36,11 @@ def show_edge(mask_ori):
     # find countours: img must be binary
     myImg = np.zeros((mask.shape[0], mask.shape[1]), np.uint8)
     ret, binary = cv2.threshold(np.uint8(mask)*255, 127, 255, cv2.THRESH_BINARY)
-    img, countours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # RETR_EXTERNAL
+    
+    # opencv4.x donot have three output for cv2.findContours: not img
+    # img, countours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # RETR_EXTERNAL
+    countours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) # RETR_EXTERNAL
+
     '''
     cv2.drawContours(myImg, countours, -1, 1, 10)
     diff = mask + myImg
@@ -64,7 +68,7 @@ def annToRLE(anno, height, width):
         rle = maskUtils.frPyObjects(segm, height, width)
     else:
         # rle
-        rle = ann['segmentation']
+        rle = anno['segmentation']
     return rle
 
 def annToMask(anno, height, width):

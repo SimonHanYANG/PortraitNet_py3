@@ -2,7 +2,8 @@ import torch
 import torch.utils.data as data
 import numpy as np
 
-from datasets_portraitseg import PortraitSeg
+# from datasets_portraitseg import PortraitSeg
+from .datasets_portraitseg import PortraitSeg
 
 class Human(data.Dataset): 
     def __init__(self, exp_args):
@@ -27,8 +28,11 @@ class Human(data.Dataset):
             self.datasets['supervisely'] = PortraitSeg(ImageRoot, AnnoRoot, ImgIds_Train, ImgIds_Test, self.exp_args)
         
         if 'EG1800' in self.datasetlist:
+            # ImageRoot: /home/dongx12/Data/EG1800/Images/
             ImageRoot = self.data_root + 'EG1800/Images/'
+            # AnnoRoot: /home/dongx12/Data/EG1800/Labels/
             AnnoRoot = self.data_root + 'EG1800/Labels/'
+            # ImgIds_Train: /home/dongx12/PortraitNet/data/select_data/eg1800_train.txt
             ImgIds_Train = self.file_root + 'eg1800_train.txt'
             ImgIds_Test = self.file_root + 'eg1800_test.txt'
             exp_args.dataset = 'eg1800'

@@ -17,17 +17,23 @@ from easydict import EasyDict as edict
 from yaml import load
 
 import sys
-sys.path.append('../data/')
-sys.path.append('../util/')
-sys.path.append('../model/')
+# sys.path.append('../data/')
+# sys.path.append('../util/')
+# sys.path.append('../model/')
 
-import datasets
-from datasets import Human
-from data_aug import Normalize_Img, Anti_Normalize_Img
-from focal_loss import FocalLoss
+# import datasets
+# from datasets import Human
+# from data_aug import Normalize_Img, Anti_Normalize_Img
+# from focal_loss import FocalLoss
 
-from logger import Logger
+# from logger import Logger
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+from data.datasets import Human
+from data.data_aug import Normalize_Img, Anti_Normalize_Img
+from util.focal_loss import FocalLoss
+
+from util.logger import Logger
 
 def calcIOU(img, mask):
     sum1 = img + mask
@@ -115,7 +121,7 @@ def test(dataLoader, netmodel, optimizer, epoch, logger, exp_args):
     
     loss_Softmax = nn.CrossEntropyLoss(ignore_index=255) # mask loss
     loss_Focalloss = FocalLoss(gamma=2) # edge loss
-    # loss_l2 = nn.MSELoss() # edge loss
+    loss_l2 = nn.MSELoss() # edge loss
     
     end = time.time()
     softmax = nn.Softmax(dim=1)
@@ -359,7 +365,7 @@ def train(dataLoader, netmodel, optimizer, epoch, logger, exp_args):
     loss_Softmax = nn.CrossEntropyLoss(ignore_index=255) # mask loss
     # in our experiments, focalloss is better than l2 loss
     loss_Focalloss = FocalLoss(gamma=2) # boundary loss
-    # loss_l2 = nn.MSELoss() # boundary loss
+    loss_l2 = nn.MSELoss() # boundary loss
     
     end = time.time()
     for i, (input_ori, input, edge, mask) in enumerate(dataLoader):  
@@ -680,7 +686,8 @@ def main(args):
     
     if args.model == 'PortraitNet':
         # train our model: portraitnet
-        import model_mobilenetv2_seg_small as modellib
+        # import model_mobilenetv2_seg_small as modellib
+        import model.model_mobilenetv2_seg_small as modellib
         netmodel = modellib.MobileNetV2(n_class=2, 
                                         useUpsample=exp_args.useUpsample, 
                                         useDeconvGroup=exp_args.useDeconvGroup, 
@@ -693,7 +700,8 @@ def main(args):
         
     elif args.model == 'BiSeNet':
         # train BiSeNet
-        import model_BiSeNet as modellib
+        # import model_BiSeNet as modellib
+        import model.model_BiSeNet as modellib
         netmodel = modellib.BiSeNet(n_class=2, 
                                     useUpsample=exp_args.useUpsample, 
                                     useDeconvGroup=exp_args.useDeconvGroup, 
@@ -702,7 +710,8 @@ def main(args):
         
     elif args.model == 'ENet':
         # trian ENet
-        import model_enet as modellib
+        # import model_enet as modellib
+        import model.model_enet as modellib
         netmodel = modellib.ENet(n_class=2).cuda()
         print ("finish load ENet ...")
         
@@ -712,7 +721,7 @@ def main(args):
     optimizer = torch.optim.Adam(params, args.lr, weight_decay=args.weightdecay) 
     
     if exp_args.init == True:
-        pretrained_state_dict = torch.load('pretrained_mobilenetv2_base.pth')
+        pretrained_state_dict = torch.load('/home/simon/SimonWorkspace/PortraitNet_py3/myTrain/pretrained_mobilenetv2_base.pth')
         pretrained_state_dict_keys = pretrained_state_dict.keys()
         netmodel_state_dict = netmodel.state_dict()
         netmodel_state_dict_keys = netmodel.state_dict().keys()
@@ -771,11 +780,13 @@ if __name__ == '__main__':
     parser.add_argument('--model', default='PortraitNet', type=str, 
                         help='<model> should in [PortraitNet, ENet, BiSeNet]')
     parser.add_argument('--config_path', 
-                        default='/home/dongx12/PortraitNet/config/model_mobilenetv2_without_auxiliary_losses.yaml', 
+                        default="/home/simon/SimonWorkspace/PortraitNet_py3/config/model_mobilenetv2_with_two_auxiliary_losses.yaml",
+                        # default='/home/dongx12/PortraitNet/config/model_mobilenetv2_without_auxiliary_losses.yaml', 
                         type=str, help='the config path of the model')
     
     parser.add_argument('--workers', default=4, type=int, help='number of data loading workers')
-    parser.add_argument('--batchsize', default=64, type=int, help='mini-batch size')
+    # for real train: batchsize=64
+    parser.add_argument('--batchsize', default=4, type=int, help='mini-batch size')
     parser.add_argument('--lr', default=0.001, type=float, help='initial learning rate')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
     parser.add_argument('--weightdecay', default=5e-4, type=float, help='weight decay')

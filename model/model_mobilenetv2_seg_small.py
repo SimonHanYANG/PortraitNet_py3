@@ -145,7 +145,7 @@ class MobileNetV2(nn.Module):
             self.stage0 = conv_bn(4, self.depth(32), 3, 2)
         else:
             self.stage0 = conv_bn(3, self.depth(32), 3, 2)
-        
+                    
         self.stage1 = InvertedResidual(self.depth(32), self.depth(16), 1, 1) # 1/2
         
         self.stage2 = nn.Sequential( # 1/4
@@ -245,7 +245,7 @@ class MobileNetV2(nn.Module):
         up_1_1  = self.deconv5(self.transit5(up_1_2))
         
         pred = self.pred(up_1_1)
-        if self.addEdge == True:
+        if self.addEdge == True:            
             edge = self.edge(up_1_1)
             return pred, edge
         else:
