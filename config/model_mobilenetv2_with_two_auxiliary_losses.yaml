@@ -1,7 +1,7 @@
 # data_root: /home/dongx12/Data/
 data_root: /home/simon/SimonWorkspace/PortraitNet_py3/datasets/
 # file_root: /home/dongx12/PortraitNet/data/select_data/
-file_root:  /home/simon/SimonWorkspace/PortraitNet_py3/data/select_data/
+file_root:  /home/simon/SimonWorkspace/PortraitNet_py3/select_data/
 model_root: /home/simon/SimonWorkspace/PortraitNet_py3/myexp/mobilenetv2_eg1800/both_224_without_group/
 # model_root: /home/dongx12/PortraitNet/myexp/mobilenetv2_eg1800/both_224_without_group/
 # model_root: /home/dongx12/PortraitNet/myexp/mobilenetv2_supervise_portrait/both_224_without_group/
