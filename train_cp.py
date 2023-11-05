@@ -369,7 +369,7 @@ def train(dataLoader, netmodel, optimizer, epoch, logger, exp_args):
     
     end = time.time()
     for i, (input_ori, input, edge, mask) in enumerate(dataLoader):  
-        import pdb ; pdb.set_trace()
+        # import pdb ; pdb.set_trace()
         
         data_time.update(time.time() - end)
         input_ori_var = Variable(input_ori.cuda())
