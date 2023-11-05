@@ -86,20 +86,162 @@ def loss_KL(student_outputs, teacher_outputs, T):
                              F.softmax(teacher_outputs/T, dim=1)) * T * T
     return KD_loss
 
-# def test(dataLoader, netmodel, optimizer, epoch, exp_args):
-#     batch_time = AverageMeter('batch_time')
-#     data_time = AverageMeter('data_time')
-#     losses = AverageMeter('losses')
+def test(dataLoader, netmodel, optimizer, epoch, exp_args):
+    batch_time = AverageMeter('batch_time')
+    data_time = AverageMeter('data_time')
+    losses = AverageMeter('losses')
     
-#     losses_mask_ori = AverageMeter('losses_mask_ori')
-#     losses_mask = AverageMeter('losses_mask')
+    losses_mask_ori = AverageMeter('losses_mask_ori')
+    losses_mask = AverageMeter('losses_mask')
     
-#     losses_edge_ori = AverageMeter('losses_edge_ori')
-#     losses_edge = AverageMeter('losses_edge')
+    losses_edge_ori = AverageMeter('losses_edge_ori')
+    losses_edge = AverageMeter('losses_edge')
     
-#     losses_stability_mask = AverageMeter('losses_stability_mask')
-#     losses_stability_edge = AverageMeter('losses_stability_edge')
+    losses_stability_mask = AverageMeter('losses_stability_mask')
+    losses_stability_edge = AverageMeter('losses_stability_edge')
     
+    # switch to eval mode
+    netmodel.eval()
+    
+    loss_Softmax = nn.CrossEntropyLoss(ignore_index=255) # mask loss
+    loss_Focalloss = FocalLoss(gamma=2) # edge loss
+    loss_l2 = nn.MSELoss() # edge loss
+    
+    end = time.time()
+    softmax = nn.Softmax(dim=1)
+    iou = 0
+    
+    for i, (input_ori, input, edge, mask) in enumerate(dataLoader):  
+        data_time.update(time.time() - end)
+        input_ori_var = Variable(input_ori.cuda())
+        input_var = Variable(input.cuda())
+        edge_var = Variable(edge.cuda())
+        mask_var = Variable(mask.cuda())
+        
+        # whether to add boundary auxiliary loss 
+        if exp_args.addEdge == True:
+            output_mask, output_edge = netmodel(input_var)
+            # ([4, 2, 224, 224])
+            # print("Output mask shape: ", output_mask.shape)
+            # ([4, 2, 224, 224])
+            # print("Output edge shape: ", output_edge.shape)
+            loss_mask = loss_Softmax(output_mask, mask_var)
+            # eg: 0.6932
+            # print("Loss Mask: ", loss_mask)
+
+            #===================
+            # Maybe cause bug
+            # losses_mask.update(loss_mask.data[0], input.size(0))
+            losses_mask.update(loss_mask.data.item(), input.size(0))
+            
+            loss_edge = loss_Focalloss(output_edge, edge_var) * exp_args.edgeRatio
+            losses_edge.update(loss_edge.data.item(), input.size(0))
+            
+            # total loss
+            loss = loss_mask + loss_edge
+            # print("Total Loss before stability: ", loss)
+            
+            # whether to add consistency constraint loss
+            if exp_args.stability == True:
+                output_mask_ori, output_edge_ori = netmodel(input_ori_var)
+                loss_mask_ori = loss_Softmax(output_mask_ori, mask_var)
+
+                # ==================
+                # Maybe cause bug
+                # losses_mask_ori.update(loss_mask_ori.data[0], input.size(0))
+                losses_mask_ori.update(loss_mask_ori.data.item(), input.size(0))
+
+                # loss_edge_ori = loss_l2(output_edge_ori, edge_var) * exp_args.edgeRatio
+                loss_edge_ori = loss_Focalloss(output_edge_ori, edge_var) * exp_args.edgeRatio
+                # losses_edge_ori.update(loss_edge_ori.data[0], input.size(0))
+                losses_edge_ori.update(loss_edge_ori.data.item(), input.size(0))
+
+                # in our experiments, kl loss is better than l2 loss
+                if exp_args.use_kl == False:
+                    # consistency constraint loss: L2 distance 
+                    loss_stability_mask = loss_l2(output_mask, 
+                                                  Variable(output_mask_ori.data, 
+                                                           requires_grad = False)) * exp_args.alpha
+                    loss_stability_edge = loss_l2(output_edge, 
+                                                  Variable(output_edge_ori.data, 
+                                                           requires_grad = False)) * exp_args.alpha * exp_args.edgeRatio
+                else:
+                    # consistency constraint loss: KL distance (better than L2 distance)
+                    loss_stability_mask = loss_KL(output_mask, 
+                                                  Variable(output_mask_ori.data, requires_grad = False), 
+                                                  exp_args.temperature) * exp_args.alpha
+                    loss_stability_edge = loss_KL(output_edge, 
+                                                  Variable(output_edge_ori.data, requires_grad = False), 
+                                                  exp_args.temperature) * exp_args.alpha * exp_args.edgeRatio
+                #============================
+                # Maybe cause bug
+                losses_stability_mask.update(loss_stability_mask.data.item(), input.size(0))
+                    
+                losses_stability_edge.update(loss_stability_edge.data.item(), input.size(0))
+
+                # total loss
+                # loss = loss_mask + loss_mask_ori + loss_edge + loss_edge_ori + loss_stability_mask + loss_stability_edge
+                loss = loss_mask + loss_mask_ori + loss_stability_mask + loss_edge
+                # print("Total Loss: ", loss)
+        else:
+            output_mask = netmodel(input_var)
+            loss_mask = loss_Softmax(output_mask, mask_var)
+            losses_mask.update(loss_mask.data[0], input.size(0))
+            # total loss: only include mask loss
+            loss = loss_mask
+            
+            if exp_args.stability == True:
+                output_mask_ori = netmodel(input_ori_var)
+                loss_mask_ori = loss_Softmax(output_mask_ori, mask_var)
+                #===========================
+                # Maybe cause bug
+                # losses_mask_ori.update(loss_mask_ori.data[0], input.size(0))
+                losses_mask_ori.update(loss_mask_ori.data.item(), input.size(0))
+
+                if exp_args.use_kl == False:
+                    # consistency constraint loss: L2 distance 
+                    loss_stability_mask = loss_l2(output_mask, 
+                                                  Variable(output_mask_ori.data, 
+                                                           requires_grad = False)) * exp_args.alpha
+                else:
+                    # consistency constraint loss: KL distance (better than L2 distance)
+                    loss_stability_mask = loss_KL(output_mask, 
+                                                  Variable(output_mask_ori.data, requires_grad = False), 
+                                                  exp_args.temperature) * exp_args.alpha
+                #==================================
+                # Maybe cause bug
+                losses_stability_mask.update(loss_stability_mask.data.item, input.size(0))
+
+                
+                # total loss
+                loss = loss_mask + loss_mask_ori + loss_stability_mask
+                # print("Total Loss Does Not Use addEdge: ", loss)
+                
+        losses.update(loss.data.item(), input.size(0))
+        # print("Total Loss Final: ", loss)
+        
+        prob = softmax(output_mask)[0,1,:,:]
+        pred = prob.data.cpu().numpy()
+        pred[pred>0.5] = 1
+        pred[pred<=0.5] = 0
+        iou += calcIOU(pred, mask_var[0].data.cpu().numpy())
+        
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+        
+        if i % args.printfreq == 0:
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Lr-deconv: [{3}]\t'
+                  'Lr-other: [{4}]\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(
+                      epoch, i, len(dataLoader), 
+                      optimizer.param_groups[0]['lr'],
+                      optimizer.param_groups[1]['lr'], 
+                      loss=losses)) 
+            
+    # return losses.avg
+    return 1-iou/len(dataLoader)
 
 def train(dataLoader, netmodel, optimizer, epoch, exp_args):
     batch_time = AverageMeter('batch_time')
@@ -397,8 +539,19 @@ def main(args):
             print ('===========>   training    <===========')
             train(dataLoader_train, netmodel, optimizer, epoch, exp_args)
             print ('===========>   testing    <===========')
-    
-    
+            loss = test(dataLoader_test, netmodel, optimizer, epoch, exp_args)
+            print ("loss: ", loss, minLoss)
+            is_best = False
+            if loss < minLoss:
+                minLoss = loss
+                is_best = True
+            save_checkpoint({
+                'epoch': epoch+1,
+                'minLoss': minLoss,
+                'state_dict': netmodel.state_dict(),
+                'optimizer' : optimizer.state_dict(),
+                }, is_best, exp_args.model_root)
+            
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Training code')
