@@ -33,7 +33,7 @@ We propose a real-time portrait segmentation model, called PortraitNet, that can
 ## Training
 
 ```
-python train.py
+python train.py --batchsize 32 
 ```
 
 ---

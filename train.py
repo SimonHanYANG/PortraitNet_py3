@@ -430,6 +430,10 @@ def main(args):
     exp_args.task = cf['task'] # only support 'seg' now
     exp_args.datasetlist = cf['datasetlist']
     exp_args.model_root = cf['model_root'] 
+
+    if not os.path.exists(exp_args.model_root):
+        os.makedirs(exp_args.model_root)
+    
     exp_args.data_root = cf['data_root']
     exp_args.file_root = cf['file_root']
     
