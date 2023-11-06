@@ -20,6 +20,8 @@ from dataset import Human
 from data_aug import Normalize_Img, Anti_Normalize_Img
 from focal_loss import FocalLoss
 
+from torch.utils.tensorboard import SummaryWriter
+
 def calcIOU(img, mask):
     sum1 = img + mask
     sum1[sum1>0] = 1
@@ -243,7 +245,7 @@ def test(dataLoader, netmodel, optimizer, epoch, exp_args):
     # return losses.avg
     return 1-iou/len(dataLoader)
 
-def train(dataLoader, netmodel, optimizer, epoch, exp_args):
+def train(dataLoader, netmodel, optimizer, epoch, exp_args, writer):
     batch_time = AverageMeter('batch_time')
     data_time = AverageMeter('data_time')
     
@@ -345,6 +347,8 @@ def train(dataLoader, netmodel, optimizer, epoch, exp_args):
                 # loss = loss_mask + loss_mask_ori + loss_edge + loss_edge_ori + loss_stability_mask + loss_stability_edge
                 loss = loss_mask + loss_mask_ori + loss_stability_mask + loss_edge
                 # print("Total Loss: ", loss)
+                # 在每个训练步骤，我们记录训练损失
+                writer.add_scalar('Training loss', loss.item(), epoch * len(dataLoader) + i)
         else:
             output_mask = netmodel(input_var)
             loss_mask = loss_Softmax(output_mask, mask_var)
@@ -378,6 +382,8 @@ def train(dataLoader, netmodel, optimizer, epoch, exp_args):
                 # total loss
                 loss = loss_mask + loss_mask_ori + loss_stability_mask
                 # print("Total Loss Does Not Use addEdge: ", loss)
+                # 在每个训练步骤，我们记录训练损失
+                writer.add_scalar('Training loss', loss.item(), epoch * len(dataLoader) + i)
                 
         losses.update(loss.data.item(), input.size(0))
         # print("Total Loss Final: ", loss)
@@ -433,6 +439,13 @@ def main(args):
 
     if not os.path.exists(exp_args.model_root):
         os.makedirs(exp_args.model_root)
+        
+    log_dir = exp_args.model_root + "log/"
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+        
+    # create a SummaryWriter 
+    writer = SummaryWriter(log_dir)
     
     exp_args.data_root = cf['data_root']
     exp_args.file_root = cf['file_root']
@@ -541,7 +554,7 @@ def main(args):
         for epoch in range(gap, 2000):
             adjust_learning_rate(optimizer, epoch, args, multiple)
             print ('===========>   training    <===========')
-            train(dataLoader_train, netmodel, optimizer, epoch, exp_args)
+            train(dataLoader_train, netmodel, optimizer, epoch, exp_args, writer)
             print ('===========>   testing    <===========')
             loss = test(dataLoader_test, netmodel, optimizer, epoch, exp_args)
             print ("loss: ", loss, minLoss)
@@ -555,7 +568,7 @@ def main(args):
                 'state_dict': netmodel.state_dict(),
                 'optimizer' : optimizer.state_dict(),
                 }, is_best, exp_args.model_root)
-            
+        writer.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Training code')

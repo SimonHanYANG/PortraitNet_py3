@@ -38,9 +38,12 @@ python train.py --batchsize 32
 
 ---
 ## Testing
-In the folder of myTest:
-- you can use `EvalModel.ipynb` to test on testing datasets.
-- you can use `VideoTest.ipynb` to test on a single image or video.
+
+Test for the image and video:
+- Test for a single image
+`python test.py`
+- Test for a video
+`Coming soon...`
 
 ---
 ## Visualization
@@ -51,7 +54,7 @@ tensorboard --logdir='./log'
 ```
 
 ---
-## Download models
+## Download models for original PortraitNet
 from Dropbox:
 - [mobilenetv2_eg1800_with_two_auxiliary_losses](https://www.dropbox.com/s/nyanai43cnynqlx/mobilenetv2_eg1800_with_two_auxiliary_losses.tar?dl=0)(Training on EG1800 with two auxiliary losses)
 - [mobilenetv2_supervise_portrait_with_two_auxiliary_losses](https://www.dropbox.com/s/pyocc3en6t63itp/mobilenetv2_supervise_portrait_with_two_auxiliary_losses.tar?dl=0)(Training on Supervise-Portrait with two auxiliary losses)
