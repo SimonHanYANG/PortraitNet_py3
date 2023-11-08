@@ -11,7 +11,7 @@ We propose a real-time portrait segmentation model, called PortraitNet, that can
 ## Experimental setup
 
 ### Requirements
-- python 3.0
+- python 3.9
 - CUDA 12.0
 - `conda create -n port python=3.9`
 - `pip install -r requirements.txt`
