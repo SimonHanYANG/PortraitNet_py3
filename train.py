@@ -88,7 +88,7 @@ def loss_KL(student_outputs, teacher_outputs, T):
                              F.softmax(teacher_outputs/T, dim=1)) * T * T
     return KD_loss
 
-def test(dataLoader, netmodel, optimizer, epoch, exp_args):
+def test(dataLoader, netmodel, optimizer, epoch, exp_args, writer):
     batch_time = AverageMeter('batch_time')
     data_time = AverageMeter('data_time')
     losses = AverageMeter('losses')
@@ -185,6 +185,10 @@ def test(dataLoader, netmodel, optimizer, epoch, exp_args):
                 # loss = loss_mask + loss_mask_ori + loss_edge + loss_edge_ori + loss_stability_mask + loss_stability_edge
                 loss = loss_mask + loss_mask_ori + loss_stability_mask + loss_edge
                 # print("Total Loss: ", loss)
+                
+                # write test loss into Writer
+                writer.add_scalar('Testing loss', loss.item(), epoch * len(dataLoader) + i)
+                
         else:
             output_mask = netmodel(input_var)
             loss_mask = loss_Softmax(output_mask, mask_var)
@@ -218,6 +222,9 @@ def test(dataLoader, netmodel, optimizer, epoch, exp_args):
                 # total loss
                 loss = loss_mask + loss_mask_ori + loss_stability_mask
                 # print("Total Loss Does Not Use addEdge: ", loss)
+                
+                # write test loss into Writer
+                writer.add_scalar('Testing loss', loss.item(), epoch * len(dataLoader) + i)
                 
         losses.update(loss.data.item(), input.size(0))
         # print("Total Loss Final: ", loss)
@@ -382,7 +389,8 @@ def train(dataLoader, netmodel, optimizer, epoch, exp_args, writer):
                 # total loss
                 loss = loss_mask + loss_mask_ori + loss_stability_mask
                 # print("Total Loss Does Not Use addEdge: ", loss)
-                # 在每个训练步骤，我们记录训练损失
+                
+                # write training loss
                 writer.add_scalar('Training loss', loss.item(), epoch * len(dataLoader) + i)
                 
         losses.update(loss.data.item(), input.size(0))
@@ -556,7 +564,7 @@ def main(args):
             print ('===========>   training    <===========')
             train(dataLoader_train, netmodel, optimizer, epoch, exp_args, writer)
             print ('===========>   testing    <===========')
-            loss = test(dataLoader_test, netmodel, optimizer, epoch, exp_args)
+            loss = test(dataLoader_test, netmodel, optimizer, epoch, exp_args, writer)
             print ("loss: ", loss, minLoss)
             is_best = False
             if loss < minLoss:
