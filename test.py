@@ -32,7 +32,7 @@ def calcIOU(img, mask):
     else:
         return 1.0*np.sum(sum2)/np.sum(sum1)
 
-def test(dataLoader, netmodel, exp_args):
+def test(dataLoader, netmodel, exp_args, outputdir):
     # switch to eval mode
     netmodel.eval()
     
@@ -49,9 +49,13 @@ def test(dataLoader, netmodel, exp_args):
             output_mask, output_edge = netmodel(input_ori_var)
         else:
             output_mask = netmodel(input_ori_var)
-            
+        
         prob = softmax(output_mask)[0,1,:,:]
         pred = prob.data.cpu().numpy()
+        
+        # Save the model output
+        plt.imsave(f'{outputdir}/output_{i}.png', pred, cmap='gray')
+        
         pred[pred>0.5] = 1
         pred[pred<=0.5] = 0
         iou += calcIOU(pred, mask_var[0].data.cpu().numpy())
@@ -140,5 +144,9 @@ if exp_args.resume:
         print("=> no checkpoint found at '{}'".format(bestModelFile))
 netmodel = netmodel.cuda()
 
-acc = test(dataLoader_test, netmodel, exp_args)
+pred_output_dir = os.path.join(exp_args.model_root, 'pred_res/')
+if not os.path.exists(pred_output_dir):
+    os.makedirs(pred_output_dir)
+
+acc = test(dataLoader_test, netmodel, exp_args, pred_output_dir)
 print ("mean iou: ", acc)
